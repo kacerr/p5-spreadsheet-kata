@@ -34,6 +34,41 @@ class Sheet {
     return $this->_cells[$targetColumn][$targetRow];
   }
 
+  function evalContent($column, $row) {
+    $cellValue = $this->getCell($column, $row)->getValue();
+    preg_match('/=(SUM|MIN|MAX)\(([A-Z]{1})([0-9]+):([A-Z]{1})([0-9]+)\)/', $cellValue, $matches);
+    if (count($matches)==6) {
+      return($this->evalRange($matches[1], $matches[2], $matches[3], $matches[4], $matches[5]));
+    };
+    return($cellValue);
+  }
+
+  function evalRange($operation, $startColumn, $startRow, $endColumn, $endRow) {
+    $range = $this->getFlattenedRange($startColumn, $startRow, $endColumn, $endRow);
+    switch ($operation) {
+      case "SUM": 
+        return array_sum($range);
+      case "MAX":
+        return max($range);
+      case "MIN":
+        return min($range);
+      default:
+        return "unknown formula";
+    }
+    #return "${operation} on range ${startColumn}${startRow}:${endColumn}{$endRow}";
+  }
+
+  function getFlattenedRange($startColumn, $startRow, $endColumn, $endRow) {
+    $out = Array();
+    for ($i=ord(strtoupper($startColumn)); $i<=ord(strtoupper($endColumn));$i++) 
+      for ($j=$startRow; $j<=$endRow;$j++) {
+        if (is_numeric($this->getCell(chr($i), $j)->getValue()))
+        $out[] = $this->getCell(chr($i), $j)->getValue();
+      }
+    return $out;
+  }
+
+
   function toString() {
     return print_r($this->_cells, true);
   }
@@ -52,14 +87,14 @@ class Sheet {
     # sheet content with line label as a first cell in table
     for ($i=0; $i<$this->rows; $i++) {
       $out .= "<tr>";
-      $out .= "<td>$i</td>";
+      $out .= "<td>" . ($i+1) . "</td>";
       for ($j=0; $j<$this->columns; $j++) {
         $targetColumn = chr(65+$j);
         $out .= "<td>";
         if (!$evalExpressions) {
           $out .="  <input type=text name=\"" . $targetColumn . ($i+1) . "\" value=\"" . $this->getCell($targetColumn, $i + 1)->getValue() . "\">";
         } else {
-          $out .= "<div style='width:100px; font-size:10px;'>" . $this->getCell($targetColumn, $i + 1)->evalContent() . "</div>";
+          $out .= "<div style='width:100px; font-size:10px;'>" . $this->evalContent($targetColumn, $i + 1) . "</div>";
         }
         $out .="</td>";
       }
