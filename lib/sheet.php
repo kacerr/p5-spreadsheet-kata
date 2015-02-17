@@ -4,7 +4,7 @@ class Sheet {
   protected $rows, $columns;
   protected $_cells;
 
-  function __construct($rows = 10, $columns = 8) {
+  function __construct($columns = 8, $rows = 10) {
     $this->rows = $rows;
     $this->columns = $columns;
     $this->_cells = Array();
@@ -25,17 +25,25 @@ class Sheet {
     return $this->columns;
   }
 
-  function getCell($column, $row){
+  function getCell($str) {
+    # expects string in a format A1 or H7 or X23
+    preg_match('/([A-Z]+)([0-9]+)/', $str, $matches);
+    if (count($matches)>0) {
+      return $this->_getCell($matches[1], $matches[2]);
+    }
+    return null;
+  }
+
+  private function _getCell($column, $row){
     $targetRow = $row - 1;
     $targetColumn = ord(strtoupper($column))-65;
 
     # throw an exception if out of range
-    # echo $column, $row,$targetColumn, $targetRow, "<br>";
     return $this->_cells[$targetColumn][$targetRow];
   }
 
   function evalContent($column, $row) {
-    $cellValue = $this->getCell($column, $row)->getValue();
+    $cellValue = $this->_getCell($column, $row)->getValue();
     preg_match('/=(SUM|MIN|MAX)\(([A-Z]{1})([0-9]+):([A-Z]{1})([0-9]+)\)/', $cellValue, $matches);
     if (count($matches)==6) {
       return($this->evalRange($matches[1], $matches[2], $matches[3], $matches[4], $matches[5]));
@@ -58,12 +66,12 @@ class Sheet {
     #return "${operation} on range ${startColumn}${startRow}:${endColumn}{$endRow}";
   }
 
-  function getFlattenedRange($startColumn, $startRow, $endColumn, $endRow) {
+  private function getFlattenedRange($startColumn, $startRow, $endColumn, $endRow) {
     $out = Array();
     for ($i=ord(strtoupper($startColumn)); $i<=ord(strtoupper($endColumn));$i++) 
       for ($j=$startRow; $j<=$endRow;$j++) {
-        if (is_numeric($this->getCell(chr($i), $j)->getValue()))
-        $out[] = $this->getCell(chr($i), $j)->getValue();
+        if (is_numeric($this->_getCell(chr($i), $j)->getValue()))
+        $out[] = $this->_getCell(chr($i), $j)->getValue();
       }
     return $out;
   }
@@ -92,7 +100,7 @@ class Sheet {
         $targetColumn = chr(65+$j);
         $out .= "<td>";
         if (!$evalExpressions) {
-          $out .="  <input type=text name=\"" . $targetColumn . ($i+1) . "\" value=\"" . $this->getCell($targetColumn, $i + 1)->getValue() . "\">";
+          $out .="  <input type=text name=\"" . $targetColumn . ($i+1) . "\" value=\"" . $this->_getCell($targetColumn, $i + 1)->getValue() . "\">";
         } else {
           $out .= "<div style='width:100px; font-size:10px;'>" . $this->evalContent($targetColumn, $i + 1) . "</div>";
         }

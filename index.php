@@ -9,7 +9,7 @@ if (!isset($_REQUEST['action']) || $_REQUEST['action']=='reset' || $_REQUEST['ac
   for ($i=0; $i<$oSheet->getRows(); $i++) 
     for ($j=0; $j<$oSheet->getColumns(); $j++) {
       # echo $i, $j, "<br>";
-      $oSheet->getCell(chr($j+65), $i + 1)->setValue( chr($j+65) . ($i+1));
+      $oSheet->getCell(chr($j+65) . ($i + 1))->setValue( chr($j+65) . ($i+1));
     } 
 } else {
   # loop through data received in post and set cell values
@@ -17,7 +17,7 @@ if (!isset($_REQUEST['action']) || $_REQUEST['action']=='reset' || $_REQUEST['ac
     #echo "${key}:: ${key[0]}: ${key[1]} <br>";
     preg_match('/([A-Z]+)([0-9]+)/', $key, $matches);
     if (count($matches)>0) {
-      $oSheet->getCell($matches[1], $matches[2])->setValue($value);
+      $oSheet->getCell($matches[1] . $matches[2])->setValue($value);
     }
   }
 }
